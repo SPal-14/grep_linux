@@ -13,6 +13,9 @@ def match_pattern(input_line, pattern):
         return any(c.isalnum() for c in input_line)
     elif pattern[0] == "[" and pattern[-1] == "]":
         return any(char in pattern[1:-1] for char in input_line)
+    #add negative character groups
+    elif pattern[0] == "[^" and pattern[-1] == "]":
+        return all(char not in pattern[2:-1] for char in input_line)
     else:
         raise RuntimeError(f"Unhandled pattern: {pattern}")
 
