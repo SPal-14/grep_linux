@@ -47,9 +47,6 @@ def recursive_regex_match(input_line, input_idx, pattern, pattern_idx):
         return input_idx == len(input_line) and pattern_idx == len(pattern) - 1
     if input_idx == len(input_line):
         return False
-    return input_line[input_idx] in pattern[pattern_idx] and recursive_regex_match(
-        input_line, input_idx + 1, pattern, pattern_idx + 1
-    )
     if input_line[input_idx] in pattern[pattern_idx]:
         if len(pattern) != pattern_idx + 1 and pattern[pattern_idx + 1] == ["+"]:
             return recursive_regex_match(
