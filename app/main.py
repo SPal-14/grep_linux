@@ -1,21 +1,22 @@
 import os
 import sys
 from io import IOBase, StringIO
-# import pyparsing - available if you need it!
-# import lark - available if you need it!
+
 _is_verbose = "VERBOSE" in os.environ
-# List of subgroup matchers
 references = []
+
 def _d(s: str, end="\n"):
     if not _is_verbose:
         return
     print(s, file=sys.stderr, end=end)
+
 def _literal_matcher(c: str):
     def m(f: StringIO):
         s = f.read(1)
         _d(f"{s} == {c}?")
         return s == c
     return m
+
 def _group_matcher(chars: str, is_pos: bool):
     def m(f: StringIO) -> bool:
         s = f.read(1)
@@ -23,17 +24,20 @@ def _group_matcher(chars: str, is_pos: bool):
         _d(f'{s} {"" if is_pos else "not "}in {chars}? {res}')
         return res
     return m
+
 def _endline_matcher():
     def m(f: StringIO):
         s = f.read(1)
         _d(f'end? {s == ""}')
         return s == "" or s == "\n"
     return m
+
 def _word_matcher():
     def m(f: StringIO):
         s = f.read(1)
         return s.isalnum() or s == "_"
     return m
+
 def _zero_more_matcher(pm):
     def m(f: StringIO):
         while True:
@@ -43,6 +47,7 @@ def _zero_more_matcher(pm):
                 break
         return True
     return m
+
 def _zero_one_matcher(pm):
     def m(f: StringIO) -> bool:
         pos = f.tell()
@@ -50,13 +55,16 @@ def _zero_one_matcher(pm):
             f.seek(pos)
         return True
     return m
+
 def _wildcard_matcher(f: StringIO) -> bool:
     s = f.read(1)
-    return s != "" or s != "\n"
+    return s != "" and s != "\n"
+
 class SubgroupMatcher(object):
-    matchers = []
     def __init__(self, choices):
         self.choices = choices
+        self.matchers = []
+
     def __call__(self, f: StringIO) -> bool:
         for choice in self.choices:
             _d("try choice")
@@ -70,12 +78,14 @@ class SubgroupMatcher(object):
                 return True
             f.seek(pos)
         return False
+
     def back_matcher(self, f: IOBase) -> bool:
         pos = f.tell()
         if all(m(f) for m in self.matchers):
             return True
         f.seek(pos)
         return False
+
 def _subgroup_matcher(pf):
     choices = []
     while True:
@@ -93,17 +103,8 @@ def _subgroup_matcher(pf):
             choices.append(_subgroup_matcher(pf))
         else:
             raise Exception(f"Unknown char in subgroup: {c}")
-    def m(f):
-        for choice in choices:
-            _d("try choice")
-            pos = f.tell()
-            if choice(f):
-                _d("choice matches")
-                return True
-            f.seek(pos)
-        return False
-    return m
     return SubgroupMatcher(choices)
+
 def _next_matcher(pf: IOBase, end):
     pos = pf.tell()
     c = pf.read(1)
@@ -143,6 +144,7 @@ def _next_matcher(pf: IOBase, end):
     else:
         _d(f"literal matcher for: {c}")
         matcher = _literal_matcher(c)
+
     # Check repeater
     pos = pf.tell()
     c = pf.read(1)
@@ -159,20 +161,22 @@ def _next_matcher(pf: IOBase, end):
     else:
         pf.seek(pos)
     return matcher
+
 def _only_start_matcher(matchers):
     def m(f: StringIO) -> bool:
-        for m in matchers:
-            if not m(f):
+        for matcher in matchers:
+            if not matcher(f):
                 return False
         return True
     return m
+
 def _scan_matcher(matchers):
     def m(f: StringIO) -> bool:
         c = "start"
         while c:
             pos = f.tell()
-            for m in matchers:
-                if not m(f):
+            for matcher in matchers:
+                if not matcher(f):
                     f.seek(pos)
                     break
             else:
@@ -180,7 +184,10 @@ def _scan_matcher(matchers):
             c = f.read(1)
         return False
     return m
-def pattern_to_matcher(pf: StringIO, end=["", "\n"]):
+
+def pattern_to_matcher(pf: StringIO, end=None):
+    if end is None:
+        end = ["", "\n"]
     pos = pf.tell()
     is_start = pf.read(1) == "^"
     if not is_start:
@@ -195,20 +202,22 @@ def pattern_to_matcher(pf: StringIO, end=["", "\n"]):
     else:
         _d("_scan_matcher")
         return _scan_matcher(matchers)
+
 def match_pattern(input_line: str, pattern: str):
     matcher = pattern_to_matcher(StringIO(pattern))
     return matcher(StringIO(input_line))
+
 def main():
     pattern = sys.argv[2]
     input_line = sys.stdin.read()
     if sys.argv[1] != "-E":
         print("Expected first argument to be '-E'")
         exit(1)
-    # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!")
     if match_pattern(input_line, pattern):
         exit(0)
     else:
         exit(1)
+
 if __name__ == "__main__":
     main()
