@@ -32,19 +32,19 @@ def match_pattern(input_line, pattern):
             return match_pattern(input_line[1:], pattern[2:])
         else:
             return False
-    # elif pattern[0] == "[" and pattern[-1] == "]":
-    #     if pattern[1] == "^":
-    #         chrs = list(pattern[2:-1])
-    #         for c in chrs:
-    #             if c in input_line:
-    #                 return False
-    #         return True
-    #     chrs = list(pattern[1:-1])
-    #     for c in chrs:
-    #         if c in input_line:
-    #             return True
-    #     return False
-    # else:
+    elif pattern[0] == "[" and pattern[-1] == "]":
+        if pattern[1] == "^":
+            chrs = list(pattern[2:-1])
+            for c in chrs:
+                if c in input_line:
+                    return False
+            return True
+        chrs = list(pattern[1:-1])
+        for c in chrs:
+            if c in input_line:
+                return True
+        return False
+    else:
         # raise RuntimeError(f"Unhandled pattern: {pattern}")
         return match_pattern(input_line[1:], pattern)
 
